@@ -194,7 +194,6 @@ pipeline {
                         sh """
                             terraform apply \
                                 -target=module.ecr \
-                                -var-file=terraform.tfvars \
                                 -auto-approve
                         """
                     }
@@ -248,7 +247,6 @@ pipeline {
                     dir(env.TF_DIR) {
                         sh """
                             terraform apply \
-                                -var-file=terraform.tfvars \
                                 -auto-approve
                         """
                     }
