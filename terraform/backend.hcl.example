@@ -1,0 +1,19 @@
+# ── For Jenkins ──────────────────────────────────────────────────────────────
+# The Jenkins pipeline bootstraps the state backend automatically.
+# No manual setup required — just push to GitHub.
+#
+# ── For local development / manual runs ─────────────────────────────────────
+# 1. Get your AWS account ID:
+#      aws sts get-caller-identity --query Account --output text
+#
+# 2. Copy this file to backend.hcl (it is gitignored):
+#      cp backend.hcl.example backend.hcl
+#
+# 3. Fill in your account ID below, then:
+#      terraform init -backend-config=backend.hcl
+
+bucket         = "mealie-tfstate-<YOUR_AWS_ACCOUNT_ID>"
+key            = "mealie/terraform.tfstate"
+region         = "us-east-1"
+dynamodb_table = "mealie-tfstate-lock"
+encrypt        = true

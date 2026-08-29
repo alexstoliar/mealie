@@ -1,0 +1,18 @@
+# Sensitive backend config (contains S3 bucket name)
+backend.hcl
+
+# Local tfvars may contain sensitive overrides
+terraform.tfvars
+
+# Terraform working directories
+**/.terraform/
+**/.terraform.lock.hcl
+
+# State files (main state is in S3; bootstrap state is local - commit it)
+*.tfstate
+*.tfstate.backup
+!bootstrap/terraform.tfstate
+!bootstrap/terraform.tfstate.backup
+
+# Plan files
+*.tfplan

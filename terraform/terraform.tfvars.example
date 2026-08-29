@@ -1,0 +1,26 @@
+# Copy this file to terraform.tfvars (it is gitignored) and adjust as needed.
+
+project_name = "mealie"
+environment  = "prod"
+aws_region   = "us-east-1"
+
+# ── Networking ────────────────────────────────────────────────────────────────
+vpc_cidr             = "10.0.0.0/16"
+public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
+private_subnet_cidrs = ["10.0.10.0/24", "10.0.11.0/24"]
+availability_zones   = ["us-east-1a", "us-east-1b"]
+
+# ── RDS PostgreSQL ────────────────────────────────────────────────────────────
+# db.t3.micro ~$15/month (20 GB storage included in free tier for 12 months)
+rds_instance_class    = "db.t3.micro"
+rds_allocated_storage = 20
+
+# ── ECS Fargate ───────────────────────────────────────────────────────────────
+# 512 CPU + 1024 MB memory ~$18/month
+ecs_task_cpu      = 512
+ecs_task_memory   = 1024
+ecs_desired_count = 1
+
+# ── Application ───────────────────────────────────────────────────────────────
+allow_signup     = "false"
+mealie_image_tag = "latest"

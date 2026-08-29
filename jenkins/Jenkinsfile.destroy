@@ -1,0 +1,196 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Mealie — Infrastructure Destroy Pipeline
+//
+// Permanently removes ALL Mealie AWS infrastructure via `terraform destroy`.
+// Requires manual approval. The Terraform state backend (S3 + DynamoDB) is
+// destroyed as a final separate step.
+//
+// Prerequisites:
+//   • AWS credentials configured in Jenkins with ID "aws-mealie-creds"
+//   • Terraform >= 1.5 installed on the Jenkins agent
+//   • terraform/terraform.tfvars present in the workspace
+// ─────────────────────────────────────────────────────────────────────────────
+
+pipeline {
+    agent any
+
+    environment {
+        AWS_REGION   = 'us-east-1'
+        PROJECT_NAME = 'mealie'
+        ENVIRONMENT  = 'prod'
+        TF_DIR       = 'terraform'
+    }
+
+    stages {
+
+        stage('Confirm Destruction') {
+            steps {
+                input(
+                    message: """
+WARNING: This will PERMANENTLY DESTROY all Mealie infrastructure in AWS.
+
+Resources that will be deleted:
+  - ECS Fargate service and cluster
+  - RDS PostgreSQL database  *** ALL DATA WILL BE LOST ***
+  - EFS filesystem            *** ALL UPLOADED FILES WILL BE LOST ***
+  - Application Load Balancer
+  - ECR repository and all Docker images
+  - VPC, subnets, NAT Gateway, Elastic IP
+  - IAM roles and Jenkins IAM user
+  - Secrets Manager secrets
+  - CloudWatch log group
+  - Terraform state S3 bucket and DynamoDB lock table
+
+This action is IRREVERSIBLE. Confirm to proceed.
+""",
+                    ok: 'Yes, destroy all infrastructure'
+                )
+            }
+        }
+
+        stage('Configure AWS') {
+            steps {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-mealie-creds',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
+                    script {
+                        env.AWS_ACCOUNT_ID  = sh(
+                            script: 'aws sts get-caller-identity --query Account --output text',
+                            returnStdout: true
+                        ).trim()
+                        env.TF_STATE_BUCKET = "${PROJECT_NAME}-tfstate-${env.AWS_ACCOUNT_ID}"
+                        env.TF_LOCK_TABLE   = "${PROJECT_NAME}-tfstate-lock"
+                    }
+                }
+            }
+        }
+
+        stage('Terraform Init') {
+            steps {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-mealie-creds',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
+                    dir(env.TF_DIR) {
+                        sh """
+                            terraform init \
+                                -backend-config="bucket=${env.TF_STATE_BUCKET}" \
+                                -backend-config="key=mealie/terraform.tfstate" \
+                                -backend-config="region=${AWS_REGION}" \
+                                -backend-config="dynamodb_table=${env.TF_LOCK_TABLE}" \
+                                -backend-config="encrypt=true" \
+                                -reconfigure
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Terraform Plan Destroy') {
+            steps {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-mealie-creds',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
+                    dir(env.TF_DIR) {
+                        sh """
+                            terraform plan -destroy \
+                                -var-file=terraform.tfvars \
+                                -out=destroy.tfplan
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Execute Destroy') {
+            steps {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-mealie-creds',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
+                    dir(env.TF_DIR) {
+                        sh 'terraform apply destroy.tfplan'
+                    }
+                }
+            }
+        }
+
+        // Destroy the state backend last (after all managed resources are gone)
+        stage('Destroy State Backend') {
+            steps {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-mealie-creds',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
+                    sh """
+                        set -e
+
+                        echo "Emptying and deleting state bucket: ${env.TF_STATE_BUCKET}"
+                        # Delete all object versions (versioning was enabled)
+                        aws s3api list-object-versions \
+                            --bucket ${env.TF_STATE_BUCKET} \
+                            --region ${AWS_REGION} \
+                            --query 'Versions[].{Key:Key,VersionId:VersionId}' \
+                            --output json | \
+                        jq -r '.[] | "--key " + .Key + " --version-id " + .VersionId' | \
+                        while read args; do
+                            aws s3api delete-object \
+                                --bucket ${env.TF_STATE_BUCKET} \
+                                --region ${AWS_REGION} \$args
+                        done || true
+
+                        # Delete delete-markers
+                        aws s3api list-object-versions \
+                            --bucket ${env.TF_STATE_BUCKET} \
+                            --region ${AWS_REGION} \
+                            --query 'DeleteMarkers[].{Key:Key,VersionId:VersionId}' \
+                            --output json | \
+                        jq -r '.[] | "--key " + .Key + " --version-id " + .VersionId' | \
+                        while read args; do
+                            aws s3api delete-object \
+                                --bucket ${env.TF_STATE_BUCKET} \
+                                --region ${AWS_REGION} \$args
+                        done || true
+
+                        aws s3api delete-bucket \
+                            --bucket ${env.TF_STATE_BUCKET} \
+                            --region ${AWS_REGION} || true
+
+                        echo "Deleting DynamoDB lock table: ${env.TF_LOCK_TABLE}"
+                        aws dynamodb delete-table \
+                            --table-name ${env.TF_LOCK_TABLE} \
+                            --region ${AWS_REGION} || true
+
+                        echo "All infrastructure and state backend destroyed."
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            dir(env.TF_DIR) {
+                sh 'rm -f destroy.tfplan || true'
+            }
+        }
+        success {
+            echo 'All Mealie infrastructure has been destroyed.'
+        }
+        failure {
+            echo 'Destroy failed or partially completed. Check the AWS console for remaining resources.'
+        }
+    }
+}
