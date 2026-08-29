@@ -8,7 +8,6 @@
 // Prerequisites:
 //   • AWS credentials configured in Jenkins with ID "aws-mealie-creds"
 //   • Terraform >= 1.5 installed on the Jenkins agent
-//   • terraform/terraform.tfvars present in the workspace
 // ─────────────────────────────────────────────────────────────────────────────
 
 pipeline {
@@ -102,7 +101,6 @@ This action is IRREVERSIBLE. Confirm to proceed.
                     dir(env.TF_DIR) {
                         sh """
                             terraform plan -destroy \
-                                -var-file=terraform.tfvars \
                                 -out=destroy.tfplan
                         """
                     }
