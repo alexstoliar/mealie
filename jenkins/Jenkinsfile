@@ -160,12 +160,16 @@ pipeline {
         // ── 4. Terraform init ─────────────────────────────────────────────────
         stage('Terraform Init') {
             steps {
-                withCredentials([[
-                    $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'aws-mealie-creds',
-                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-                ]]) {
+                withCredentials([
+                    file(credentialsId: 'terraform-tfvars', variable: 'TFVARS_FILE'),
+                    [
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        credentialsId: 'aws-mealie-creds',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]
+                ]) {
+                    sh "cp \${TFVARS_FILE} ${env.TF_DIR}/terraform.tfvars"
                     dir(env.TF_DIR) {
                         sh """
                             terraform init \
