@@ -20,6 +20,14 @@ data "aws_route_table" "subnets" {
   subnet_id = each.value
 }
 
+# NACLs on the corporate subnets — needed to add rules for ECS Fargate traffic.
+# The corporate NACLs deny all traffic by default; we punch holes for the flows
+# Fargate requires without touching any existing rules.
+data "aws_network_acl" "subnets" {
+  for_each  = toset(var.existing_subnet_ids)
+  subnet_id = each.value
+}
+
 # ── Security Groups ───────────────────────────────────────────────────────────
 
 resource "aws_security_group" "alb" {
@@ -203,4 +211,46 @@ resource "aws_vpc_endpoint" "s3" {
   route_table_ids   = [for rt in data.aws_route_table.subnets : rt.id]
 
   tags = { Name = "${var.project_name}-${var.environment}-vpce-s3" }
+}
+
+# ── NACL rules for ECS Fargate ────────────────────────────────────────────────
+# The corporate NACLs are stateless and deny all traffic not explicitly allowed.
+# Fargate requires two additional rules per subnet:
+#
+#  EGRESS 500  — TCP to any destination on 443 and ephemeral ports (1024-65535).
+#                The VPC endpoint ENIs live in the VPC CIDR and egress rule 140
+#                already covers them, but AWS may route endpoint traffic through
+#                non-RFC-1918 Amazon-owned IPs (e.g. 16.15.x.x) depending on
+#                how the private hosted zone ALIAS chain resolves inside Fargate.
+#                This rule covers that path without opening unrestricted egress.
+#
+#  INBOUND 500 — TCP ephemeral ports (1024-65535) from the VPC CIDR.
+#                NACLs are stateless: the SYN from the task goes out (covered by
+#                existing egress rule 140 for VPC CIDR), but the SYN-ACK back to
+#                the task's ephemeral port is denied without this rule.
+
+resource "aws_network_acl_rule" "egress_https_aws" {
+  for_each = data.aws_network_acl.subnets
+
+  network_acl_id = each.value.id
+  rule_number    = 500
+  egress         = true
+  protocol       = "tcp"
+  rule_action    = "allow"
+  cidr_block     = "0.0.0.0/0"
+  from_port      = 443
+  to_port        = 443
+}
+
+resource "aws_network_acl_rule" "inbound_ephemeral_vpc" {
+  for_each = data.aws_network_acl.subnets
+
+  network_acl_id = each.value.id
+  rule_number    = 500
+  egress         = false
+  protocol       = "tcp"
+  rule_action    = "allow"
+  cidr_block     = data.aws_vpc.main.cidr_block
+  from_port      = 1024
+  to_port        = 65535
 }
