@@ -28,6 +28,12 @@ variable "existing_subnet_ids" {
   description = "Subnet IDs from the corporate VPC spanning at least 2 AZs (for ALB and RDS)"
 }
 
+variable "subnet_nacl_ids" {
+  type        = map(string)
+  description = "Map of key => NACL ID for each subnet that needs Fargate NACL rules. Keys can be anything unique (e.g. subnet IDs). Get values with: aws ec2 describe-network-acls --filters 'Name=association.subnet-id,Values=<subnet-id>' --query 'NetworkAcls[0].NetworkAclId'"
+  default     = {}
+}
+
 variable "allowed_cidr_blocks" {
   type        = list(string)
   description = "Corporate VPN and office IP ranges allowed to reach the ALB"

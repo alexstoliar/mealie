@@ -20,14 +20,6 @@ data "aws_route_table" "subnets" {
   subnet_id = each.value
 }
 
-# NACLs on the corporate subnets — needed to add rules for ECS Fargate traffic.
-# The corporate NACLs deny all traffic by default; we punch holes for the flows
-# Fargate requires without touching any existing rules.
-data "aws_network_acl" "subnets" {
-  for_each  = toset(var.existing_subnet_ids)
-  subnet_id = each.value
-}
-
 # ── Security Groups ───────────────────────────────────────────────────────────
 
 resource "aws_security_group" "alb" {
@@ -215,24 +207,28 @@ resource "aws_vpc_endpoint" "s3" {
 
 # ── NACL rules for ECS Fargate ────────────────────────────────────────────────
 # The corporate NACLs are stateless and deny all traffic not explicitly allowed.
-# Fargate requires two additional rules per subnet:
+# Two rules are required per NACL:
 #
-#  EGRESS 500  — TCP to any destination on 443 and ephemeral ports (1024-65535).
-#                The VPC endpoint ENIs live in the VPC CIDR and egress rule 140
-#                already covers them, but AWS may route endpoint traffic through
-#                non-RFC-1918 Amazon-owned IPs (e.g. 16.15.x.x) depending on
-#                how the private hosted zone ALIAS chain resolves inside Fargate.
-#                This rule covers that path without opening unrestricted egress.
+#  EGRESS 500  — TCP 443 to 0.0.0.0/0. The VPC endpoint ENIs are in the VPC
+#                CIDR (covered by existing egress rule 140), but AWS routes
+#                endpoint traffic through Amazon-owned IPs (e.g. 16.15.x.x)
+#                that fall outside the VPC CIDR. This rule covers that path.
 #
 #  INBOUND 500 — TCP ephemeral ports (1024-65535) from the VPC CIDR.
-#                NACLs are stateless: the SYN from the task goes out (covered by
-#                existing egress rule 140 for VPC CIDR), but the SYN-ACK back to
-#                the task's ephemeral port is denied without this rule.
+#                NACLs are stateless: the SYN goes out (egress rule 140) but
+#                the SYN-ACK returns to the task's ephemeral port and is denied
+#                without this rule.
+#
+# NACL IDs are passed in via var.subnet_nacl_ids (map of nacl_id strings).
+# Obtain them with:
+#   aws ec2 describe-network-acls \
+#     --filters "Name=association.subnet-id,Values=<subnet-id>" \
+#     --query 'NetworkAcls[0].NetworkAclId' --region us-east-1
 
 resource "aws_network_acl_rule" "egress_https_aws" {
-  for_each = data.aws_network_acl.subnets
+  for_each = var.subnet_nacl_ids
 
-  network_acl_id = each.value.id
+  network_acl_id = each.value
   rule_number    = 500
   egress         = true
   protocol       = "tcp"
@@ -243,9 +239,9 @@ resource "aws_network_acl_rule" "egress_https_aws" {
 }
 
 resource "aws_network_acl_rule" "inbound_ephemeral_vpc" {
-  for_each = data.aws_network_acl.subnets
+  for_each = var.subnet_nacl_ids
 
-  network_acl_id = each.value.id
+  network_acl_id = each.value
   rule_number    = 500
   egress         = false
   protocol       = "tcp"

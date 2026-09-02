@@ -25,3 +25,9 @@ variable "aws_region" {
   type        = string
   description = "AWS region — used to build VPC endpoint service names"
 }
+
+variable "subnet_nacl_ids" {
+  type        = map(string)
+  description = "Map of arbitrary key => NACL ID for subnets that need Fargate NACL rules added. Use any unique key per entry (e.g. subnet ID). Obtain IDs with: aws ec2 describe-network-acls --filters 'Name=association.subnet-id,Values=<id>' --query 'NetworkAcls[0].NetworkAclId'"
+  default     = {}
+}
