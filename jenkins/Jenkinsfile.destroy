@@ -97,15 +97,19 @@ This action is IRREVERSIBLE. Confirm to proceed.
 
         stage('Terraform Plan Destroy') {
             steps {
-                withCredentials([[
-                    $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'aws-mealie-creds',
-                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-                ]]) {
+                withCredentials([
+                    file(credentialsId: 'terraform-tfvars', variable: 'TFVARS_FILE'),
+                    [
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        credentialsId: 'aws-mealie-creds',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]
+                ]) {
                     dir(env.TF_DIR) {
                         sh """
                             terraform plan -destroy \
+                                -var-file=\${TFVARS_FILE} \
                                 -out=destroy.tfplan
                         """
                     }
