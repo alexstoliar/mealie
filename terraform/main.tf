@@ -3,6 +3,7 @@ module "networking" {
 
   project_name        = var.project_name
   environment         = var.environment
+  aws_region          = var.aws_region
   existing_vpc_id     = var.existing_vpc_id
   existing_subnet_ids = var.existing_subnet_ids
   allowed_cidr_blocks = var.allowed_cidr_blocks

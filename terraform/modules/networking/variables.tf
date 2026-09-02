@@ -20,3 +20,8 @@ variable "allowed_cidr_blocks" {
   type        = list(string)
   description = "CIDR blocks allowed to reach the ALB (corporate VPN and office IP ranges)"
 }
+
+variable "aws_region" {
+  type        = string
+  description = "AWS region — used to build VPC endpoint service names"
+}

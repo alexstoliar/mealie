@@ -1,7 +1,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Mealie — Infrastructure Destroy Pipeline
 //
-// Permanently removes ALL Mealie AWS infrastructure via `terraform destroy`.
+// Permanently removes Mealie AWS infrastructure via `terraform destroy`.
+// The corporate VPC and its subnets are NOT destroyed — they are referenced
+// as data sources and are never managed by this Terraform configuration.
 // Requires manual approval. The Terraform state backend (S3 + DynamoDB) is
 // destroyed as a final separate step.
 //
@@ -26,7 +28,7 @@ pipeline {
             steps {
                 input(
                     message: """
-WARNING: This will PERMANENTLY DESTROY all Mealie infrastructure in AWS.
+WARNING: This will PERMANENTLY DESTROY Mealie infrastructure in AWS.
 
 Resources that will be deleted:
   - ECS Fargate service and cluster
@@ -34,11 +36,14 @@ Resources that will be deleted:
   - EFS filesystem            *** ALL UPLOADED FILES WILL BE LOST ***
   - Application Load Balancer
   - ECR repository and all Docker images
-  - VPC, subnets, NAT Gateway, Elastic IP
+  - Security groups (ALB, ECS, RDS, EFS)
   - IAM roles and Jenkins IAM user
   - Secrets Manager secrets
   - CloudWatch log group
   - Terraform state S3 bucket and DynamoDB lock table
+
+Resources that will NOT be deleted:
+  - Corporate VPC and subnets (pre-existing, not managed by Terraform)
 
 This action is IRREVERSIBLE. Confirm to proceed.
 """,

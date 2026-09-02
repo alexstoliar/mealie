@@ -3,6 +3,12 @@ data "aws_vpc" "main" {
   id = var.existing_vpc_id
 }
 
+# Route tables for the existing subnets — needed to attach the S3 gateway endpoint.
+data "aws_route_table" "subnets" {
+  for_each  = toset(var.existing_subnet_ids)
+  subnet_id = each.value
+}
+
 # ── Security Groups ───────────────────────────────────────────────────────────
 
 resource "aws_security_group" "alb" {
@@ -45,7 +51,7 @@ resource "aws_security_group" "ecs" {
   }
 
   egress {
-    description = "All outbound (IGW for ECR/SM/CWL)"
+    description = "All outbound"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -99,4 +105,91 @@ resource "aws_security_group" "efs" {
   }
 
   tags = { Name = "${var.project_name}-${var.environment}-efs-sg" }
+}
+
+# ── VPC Endpoints ─────────────────────────────────────────────────────────────
+# The corporate VPC subnets route traffic through the corporate network rather
+# than directly to an AWS Internet Gateway, so ECS tasks cannot reach AWS
+# service public endpoints. Interface endpoints keep all AWS-to-AWS traffic on
+# the private backbone, bypassing corporate routing entirely.
+
+resource "aws_security_group" "vpc_endpoints" {
+  name        = "${var.project_name}-${var.environment}-vpce-sg"
+  description = "VPC endpoints: HTTPS from ECS tasks"
+  vpc_id      = data.aws_vpc.main.id
+
+  ingress {
+    description     = "HTTPS from ECS tasks"
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.ecs.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = { Name = "${var.project_name}-${var.environment}-vpce-sg" }
+}
+
+# Secrets Manager — fetched at task startup for DB password
+resource "aws_vpc_endpoint" "secretsmanager" {
+  vpc_id              = data.aws_vpc.main.id
+  service_name        = "com.amazonaws.${var.aws_region}.secretsmanager"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = var.existing_subnet_ids
+  security_group_ids  = [aws_security_group.vpc_endpoints.id]
+  private_dns_enabled = true
+
+  tags = { Name = "${var.project_name}-${var.environment}-vpce-secretsmanager" }
+}
+
+# ECR API — image manifest lookups
+resource "aws_vpc_endpoint" "ecr_api" {
+  vpc_id              = data.aws_vpc.main.id
+  service_name        = "com.amazonaws.${var.aws_region}.ecr.api"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = var.existing_subnet_ids
+  security_group_ids  = [aws_security_group.vpc_endpoints.id]
+  private_dns_enabled = true
+
+  tags = { Name = "${var.project_name}-${var.environment}-vpce-ecr-api" }
+}
+
+# ECR DKR — image layer pulls
+resource "aws_vpc_endpoint" "ecr_dkr" {
+  vpc_id              = data.aws_vpc.main.id
+  service_name        = "com.amazonaws.${var.aws_region}.ecr.dkr"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = var.existing_subnet_ids
+  security_group_ids  = [aws_security_group.vpc_endpoints.id]
+  private_dns_enabled = true
+
+  tags = { Name = "${var.project_name}-${var.environment}-vpce-ecr-dkr" }
+}
+
+# CloudWatch Logs — container log delivery
+resource "aws_vpc_endpoint" "logs" {
+  vpc_id              = data.aws_vpc.main.id
+  service_name        = "com.amazonaws.${var.aws_region}.logs"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = var.existing_subnet_ids
+  security_group_ids  = [aws_security_group.vpc_endpoints.id]
+  private_dns_enabled = true
+
+  tags = { Name = "${var.project_name}-${var.environment}-vpce-logs" }
+}
+
+# S3 Gateway endpoint — ECR stores image layers in S3 (free, no SG needed)
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id            = data.aws_vpc.main.id
+  service_name      = "com.amazonaws.${var.aws_region}.s3"
+  vpc_endpoint_type = "Gateway"
+  route_table_ids   = [for rt in data.aws_route_table.subnets : rt.id]
+
+  tags = { Name = "${var.project_name}-${var.environment}-vpce-s3" }
 }
