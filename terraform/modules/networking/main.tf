@@ -1,6 +1,17 @@
 # Reference the existing corporate VPC — do NOT recreate networking infrastructure.
 data "aws_vpc" "main" {
   id = var.existing_vpc_id
+
+  lifecycle {
+    postcondition {
+      condition     = self.enable_dns_support == true
+      error_message = "VPC ${var.existing_vpc_id} must have enableDnsSupport=true for VPC interface endpoints (ECR, Secrets Manager, CloudWatch Logs) to intercept DNS. Run: aws ec2 modify-vpc-attribute --vpc-id ${var.existing_vpc_id} --enable-dns-support '{\"Value\":true}'"
+    }
+    postcondition {
+      condition     = self.enable_dns_hostnames == true
+      error_message = "VPC ${var.existing_vpc_id} must have enableDnsHostnames=true for VPC interface endpoints (ECR, Secrets Manager, CloudWatch Logs) to intercept DNS. Run: aws ec2 modify-vpc-attribute --vpc-id ${var.existing_vpc_id} --enable-dns-hostnames '{\"Value\":true}'"
+    }
+  }
 }
 
 # Route tables for the existing subnets — needed to attach the S3 gateway endpoint.
