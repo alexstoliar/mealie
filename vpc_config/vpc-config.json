@@ -1,0 +1,51 @@
+{
+    "Vpcs": [
+        {
+            "OwnerId": "770404292559",
+            "InstanceTenancy": "default",
+            "CidrBlockAssociationSet": [
+                {
+                    "AssociationId": "vpc-cidr-assoc-04e8fd0893216cb99",
+                    "CidrBlock": "10.104.132.0/22",
+                    "CidrBlockState": {
+                        "State": "associated"
+                    }
+                }
+            ],
+            "IsDefault": false,
+            "Tags": [
+                {
+                    "Key": "aws:cloudformation:stack-name",
+                    "Value": "SecureVPC"
+                },
+                {
+                    "Key": "Project",
+                    "Value": "ZRT-C013"
+                },
+                {
+                    "Key": "Name",
+                    "Value": "SecureEnvVPC"
+                },
+                {
+                    "Key": "Owner",
+                    "Value": "Network Team"
+                },
+                {
+                    "Key": "aws:cloudformation:logical-id",
+                    "Value": "SecureEnvVPC"
+                },
+                {
+                    "Key": "aws:cloudformation:stack-id",
+                    "Value": "arn:aws:cloudformation:us-east-1:770404292559:stack/SecureVPC/7d84b900-4f89-11f1-bd20-12b7a2040e37"
+                }
+            ],
+            "BlockPublicAccessStates": {
+                "InternetGatewayBlockMode": "off"
+            },
+            "VpcId": "vpc-03a6c93961c48f3e6",
+            "State": "available",
+            "CidrBlock": "10.104.132.0/22",
+            "DhcpOptionsId": "dopt-0a3018b1b2a079f3e"
+        }
+    ]
+}

@@ -1,12 +1,11 @@
 module "networking" {
   source = "./modules/networking"
 
-  project_name         = var.project_name
-  environment          = var.environment
-  vpc_cidr             = var.vpc_cidr
-  public_subnet_cidrs  = var.public_subnet_cidrs
-  private_subnet_cidrs = var.private_subnet_cidrs
-  availability_zones   = var.availability_zones
+  project_name        = var.project_name
+  environment         = var.environment
+  existing_vpc_id     = var.existing_vpc_id
+  existing_subnet_ids = var.existing_subnet_ids
+  allowed_cidr_blocks = var.allowed_cidr_blocks
 }
 
 module "ecr" {

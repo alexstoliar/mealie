@@ -18,28 +18,19 @@ variable "aws_region" {
 
 # ── Networking ────────────────────────────────────────────────────────────────
 
-variable "vpc_cidr" {
+variable "existing_vpc_id" {
   type        = string
-  description = "CIDR block for the VPC"
-  default     = "10.0.0.0/16"
+  description = "ID of the existing corporate VPC to deploy into"
 }
 
-variable "public_subnet_cidrs" {
+variable "existing_subnet_ids" {
   type        = list(string)
-  description = "CIDR blocks for public subnets (one per AZ)"
-  default     = ["10.0.1.0/24", "10.0.2.0/24"]
+  description = "Subnet IDs from the corporate VPC spanning at least 2 AZs (for ALB and RDS)"
 }
 
-variable "private_subnet_cidrs" {
+variable "allowed_cidr_blocks" {
   type        = list(string)
-  description = "CIDR blocks for private subnets (one per AZ)"
-  default     = ["10.0.10.0/24", "10.0.11.0/24"]
-}
-
-variable "availability_zones" {
-  type        = list(string)
-  description = "Availability zones to use (must match subnet count)"
-  default     = ["us-east-1a", "us-east-1b"]
+  description = "Corporate VPN and office IP ranges allowed to reach the ALB"
 }
 
 # ── RDS ───────────────────────────────────────────────────────────────────────

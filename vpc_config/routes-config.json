@@ -1,0 +1,241 @@
+{
+    "RouteTables": [
+        {
+            "Associations": [
+                {
+                    "Main": false,
+                    "RouteTableAssociationId": "rtbassoc-017891893224fe698",
+                    "RouteTableId": "rtb-0a580d97cc40f63ec",
+                    "SubnetId": "subnet-078a376937569f346",
+                    "AssociationState": {
+                        "State": "associated"
+                    }
+                }
+            ],
+            "PropagatingVgws": [],
+            "RouteTableId": "rtb-0a580d97cc40f63ec",
+            "Routes": [
+                {
+                    "DestinationCidrBlock": "10.104.132.0/22",
+                    "GatewayId": "local",
+                    "Origin": "CreateRouteTable",
+                    "State": "active"
+                },
+                {
+                    "DestinationCidrBlock": "0.0.0.0/0",
+                    "GatewayId": "igw-00da91a33f89a0f88",
+                    "Origin": "CreateRoute",
+                    "State": "active"
+                }
+            ],
+            "Tags": [
+                {
+                    "Key": "aws:cloudformation:stack-name",
+                    "Value": "SecureVPC"
+                },
+                {
+                    "Key": "aws:cloudformation:stack-id",
+                    "Value": "arn:aws:cloudformation:us-east-1:770404292559:stack/SecureVPC/7d84b900-4f89-11f1-bd20-12b7a2040e37"
+                },
+                {
+                    "Key": "aws:cloudformation:logical-id",
+                    "Value": "RouteTable1"
+                },
+                {
+                    "Key": "Name",
+                    "Value": "SecureEnvRouteTable1"
+                },
+                {
+                    "Key": "Owner",
+                    "Value": "Network Team"
+                },
+                {
+                    "Key": "Project",
+                    "Value": "ZRT-C013"
+                }
+            ],
+            "VpcId": "vpc-03a6c93961c48f3e6",
+            "OwnerId": "770404292559"
+        },
+        {
+            "Associations": [
+                {
+                    "Main": false,
+                    "RouteTableAssociationId": "rtbassoc-089e0aa2e4e376cfe",
+                    "RouteTableId": "rtb-06239cd2dea0093f3",
+                    "SubnetId": "subnet-0071721f724815847",
+                    "AssociationState": {
+                        "State": "associated"
+                    }
+                }
+            ],
+            "PropagatingVgws": [],
+            "RouteTableId": "rtb-06239cd2dea0093f3",
+            "Routes": [
+                {
+                    "DestinationCidrBlock": "10.104.132.0/22",
+                    "GatewayId": "local",
+                    "Origin": "CreateRouteTable",
+                    "State": "active"
+                },
+                {
+                    "DestinationCidrBlock": "0.0.0.0/0",
+                    "GatewayId": "igw-00da91a33f89a0f88",
+                    "Origin": "CreateRoute",
+                    "State": "active"
+                }
+            ],
+            "Tags": [
+                {
+                    "Key": "aws:cloudformation:logical-id",
+                    "Value": "RouteTable2"
+                },
+                {
+                    "Key": "Name",
+                    "Value": "SecureEnvRouteTable2"
+                },
+                {
+                    "Key": "Project",
+                    "Value": "ZRT-C013"
+                },
+                {
+                    "Key": "aws:cloudformation:stack-name",
+                    "Value": "SecureVPC"
+                },
+                {
+                    "Key": "Owner",
+                    "Value": "Network Team"
+                },
+                {
+                    "Key": "aws:cloudformation:stack-id",
+                    "Value": "arn:aws:cloudformation:us-east-1:770404292559:stack/SecureVPC/7d84b900-4f89-11f1-bd20-12b7a2040e37"
+                }
+            ],
+            "VpcId": "vpc-03a6c93961c48f3e6",
+            "OwnerId": "770404292559"
+        },
+        {
+            "Associations": [],
+            "PropagatingVgws": [],
+            "RouteTableId": "rtb-06f7b73e8bfb6fa1b",
+            "Routes": [
+                {
+                    "DestinationCidrBlock": "10.104.132.0/22",
+                    "GatewayId": "local",
+                    "Origin": "CreateRouteTable",
+                    "State": "active"
+                }
+            ],
+            "Tags": [
+                {
+                    "Key": "Owner",
+                    "Value": "Network Team"
+                },
+                {
+                    "Key": "aws:cloudformation:logical-id",
+                    "Value": "MainRouteTable"
+                },
+                {
+                    "Key": "Project",
+                    "Value": "ZRT-C013"
+                },
+                {
+                    "Key": "aws:cloudformation:stack-id",
+                    "Value": "arn:aws:cloudformation:us-east-1:770404292559:stack/SecureVPC/7d84b900-4f89-11f1-bd20-12b7a2040e37"
+                },
+                {
+                    "Key": "Name",
+                    "Value": "SecureEnvMainRouteTable"
+                },
+                {
+                    "Key": "aws:cloudformation:stack-name",
+                    "Value": "SecureVPC"
+                }
+            ],
+            "VpcId": "vpc-03a6c93961c48f3e6",
+            "OwnerId": "770404292559"
+        },
+        {
+            "Associations": [
+                {
+                    "Main": false,
+                    "RouteTableAssociationId": "rtbassoc-0e4f8344a972192f5",
+                    "RouteTableId": "rtb-0b0fab1717522ef56",
+                    "SubnetId": "subnet-0946c05e288097986",
+                    "AssociationState": {
+                        "State": "associated"
+                    }
+                }
+            ],
+            "PropagatingVgws": [],
+            "RouteTableId": "rtb-0b0fab1717522ef56",
+            "Routes": [
+                {
+                    "DestinationCidrBlock": "10.104.132.0/22",
+                    "GatewayId": "local",
+                    "Origin": "CreateRouteTable",
+                    "State": "active"
+                },
+                {
+                    "DestinationCidrBlock": "0.0.0.0/0",
+                    "GatewayId": "igw-00da91a33f89a0f88",
+                    "Origin": "CreateRoute",
+                    "State": "active"
+                }
+            ],
+            "Tags": [
+                {
+                    "Key": "Name",
+                    "Value": "SecureEnvRouteTable0"
+                },
+                {
+                    "Key": "aws:cloudformation:stack-id",
+                    "Value": "arn:aws:cloudformation:us-east-1:770404292559:stack/SecureVPC/7d84b900-4f89-11f1-bd20-12b7a2040e37"
+                },
+                {
+                    "Key": "aws:cloudformation:stack-name",
+                    "Value": "SecureVPC"
+                },
+                {
+                    "Key": "aws:cloudformation:logical-id",
+                    "Value": "RouteTable0"
+                },
+                {
+                    "Key": "Project",
+                    "Value": "ZRT-C013"
+                },
+                {
+                    "Key": "Owner",
+                    "Value": "Network Team"
+                }
+            ],
+            "VpcId": "vpc-03a6c93961c48f3e6",
+            "OwnerId": "770404292559"
+        },
+        {
+            "Associations": [
+                {
+                    "Main": true,
+                    "RouteTableAssociationId": "rtbassoc-06e672474fadacb40",
+                    "RouteTableId": "rtb-04aeebd37dbb298bf",
+                    "AssociationState": {
+                        "State": "associated"
+                    }
+                }
+            ],
+            "PropagatingVgws": [],
+            "RouteTableId": "rtb-04aeebd37dbb298bf",
+            "Routes": [
+                {
+                    "DestinationCidrBlock": "10.104.132.0/22",
+                    "GatewayId": "local",
+                    "Origin": "CreateRouteTable",
+                    "State": "active"
+                }
+            ],
+            "Tags": [],
+            "VpcId": "vpc-03a6c93961c48f3e6",
+            "OwnerId": "770404292559"
+        }
+    ]
+}

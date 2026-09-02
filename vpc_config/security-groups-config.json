@@ -1,0 +1,113 @@
+{
+    "SecurityGroups": [
+        {
+            "GroupId": "sg-0b6c595e12be3c4b7",
+            "IpPermissionsEgress": [
+                {
+                    "IpProtocol": "-1",
+                    "UserIdGroupPairs": [],
+                    "IpRanges": [
+                        {
+                            "CidrIp": "195.160.232.0/22"
+                        },
+                        {
+                            "CidrIp": "185.112.172.0/22"
+                        },
+                        {
+                            "CidrIp": "217.9.4.0/22"
+                        },
+                        {
+                            "CidrIp": "172.16.0.0/16"
+                        },
+                        {
+                            "CidrIp": "10.104.132.0/22"
+                        }
+                    ],
+                    "Ipv6Ranges": [],
+                    "PrefixListIds": []
+                }
+            ],
+            "Tags": [
+                {
+                    "Key": "aws:cloudformation:stack-id",
+                    "Value": "arn:aws:cloudformation:us-east-1:770404292559:stack/SecureVPC/7d84b900-4f89-11f1-bd20-12b7a2040e37"
+                },
+                {
+                    "Key": "aws:cloudformation:logical-id",
+                    "Value": "InstanceSecurityGroup"
+                },
+                {
+                    "Key": "aws:cloudformation:stack-name",
+                    "Value": "SecureVPC"
+                }
+            ],
+            "VpcId": "vpc-03a6c93961c48f3e6",
+            "SecurityGroupArn": "arn:aws:ec2:us-east-1:770404292559:security-group/sg-0b6c595e12be3c4b7",
+            "OwnerId": "770404292559",
+            "GroupName": "SecureVPC-InstanceSecurityGroup-g49uEA9Q4rE0",
+            "Description": "Allow http to client host",
+            "IpPermissions": [
+                {
+                    "IpProtocol": "tcp",
+                    "FromPort": 22,
+                    "ToPort": 22,
+                    "UserIdGroupPairs": [],
+                    "IpRanges": [
+                        {
+                            "CidrIp": "195.160.232.0/22"
+                        },
+                        {
+                            "CidrIp": "185.112.172.0/22"
+                        },
+                        {
+                            "CidrIp": "217.9.4.0/22"
+                        },
+                        {
+                            "CidrIp": "172.16.0.0/16"
+                        },
+                        {
+                            "CidrIp": "10.104.132.0/22"
+                        }
+                    ],
+                    "Ipv6Ranges": [],
+                    "PrefixListIds": []
+                },
+                {
+                    "IpProtocol": "tcp",
+                    "FromPort": 3389,
+                    "ToPort": 3389,
+                    "UserIdGroupPairs": [],
+                    "IpRanges": [
+                        {
+                            "CidrIp": "195.160.232.0/22"
+                        },
+                        {
+                            "CidrIp": "185.112.172.0/22"
+                        },
+                        {
+                            "CidrIp": "217.9.4.0/22"
+                        },
+                        {
+                            "CidrIp": "172.16.0.0/16"
+                        },
+                        {
+                            "CidrIp": "10.104.132.0/22"
+                        }
+                    ],
+                    "Ipv6Ranges": [],
+                    "PrefixListIds": []
+                }
+            ]
+        },
+        {
+            "GroupId": "sg-039a577c26f884c22",
+            "IpPermissionsEgress": [],
+            "VpcId": "vpc-03a6c93961c48f3e6",
+            "SecurityGroupArn": "arn:aws:ec2:us-east-1:770404292559:security-group/sg-039a577c26f884c22",
+            "OwnerId": "770404292559",
+            "GroupName": "default",
+            "Description": "default VPC security group",
+            "IpPermissions": []
+        }
+    ]
+}

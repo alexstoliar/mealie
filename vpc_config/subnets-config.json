@@ -1,0 +1,160 @@
+{
+    "Subnets": [
+        {
+            "AvailabilityZoneId": "use1-az4",
+            "MapCustomerOwnedIpOnLaunch": false,
+            "OwnerId": "770404292559",
+            "AssignIpv6AddressOnCreation": false,
+            "Ipv6CidrBlockAssociationSet": [],
+            "Tags": [
+                {
+                    "Key": "Project",
+                    "Value": "ZRT-C013"
+                },
+                {
+                    "Key": "Owner",
+                    "Value": "Network Team"
+                },
+                {
+                    "Key": "aws:cloudformation:stack-id",
+                    "Value": "arn:aws:cloudformation:us-east-1:770404292559:stack/SecureVPC/7d84b900-4f89-11f1-bd20-12b7a2040e37"
+                },
+                {
+                    "Key": "Name",
+                    "Value": "SecureEnvSubnet0"
+                },
+                {
+                    "Key": "aws:cloudformation:logical-id",
+                    "Value": "Subnet0"
+                },
+                {
+                    "Key": "aws:cloudformation:stack-name",
+                    "Value": "SecureVPC"
+                }
+            ],
+            "SubnetArn": "arn:aws:ec2:us-east-1:770404292559:subnet/subnet-0946c05e288097986",
+            "EnableDns64": false,
+            "Ipv6Native": false,
+            "PrivateDnsNameOptionsOnLaunch": {
+                "HostnameType": "ip-name",
+                "EnableResourceNameDnsARecord": false,
+                "EnableResourceNameDnsAAAARecord": false
+            },
+            "BlockPublicAccessStates": {
+                "InternetGatewayBlockMode": "off"
+            },
+            "SubnetId": "subnet-0946c05e288097986",
+            "State": "available",
+            "VpcId": "vpc-03a6c93961c48f3e6",
+            "CidrBlock": "10.104.132.0/24",
+            "AvailableIpAddressCount": 251,
+            "AvailabilityZone": "us-east-1a",
+            "DefaultForAz": false,
+            "MapPublicIpOnLaunch": false
+        },
+        {
+            "AvailabilityZoneId": "use1-az6",
+            "MapCustomerOwnedIpOnLaunch": false,
+            "OwnerId": "770404292559",
+            "AssignIpv6AddressOnCreation": false,
+            "Ipv6CidrBlockAssociationSet": [],
+            "Tags": [
+                {
+                    "Key": "Owner",
+                    "Value": "Network Team"
+                },
+                {
+                    "Key": "Project",
+                    "Value": "ZRT-C013"
+                },
+                {
+                    "Key": "aws:cloudformation:stack-id",
+                    "Value": "arn:aws:cloudformation:us-east-1:770404292559:stack/SecureVPC/7d84b900-4f89-11f1-bd20-12b7a2040e37"
+                },
+                {
+                    "Key": "aws:cloudformation:logical-id",
+                    "Value": "Subnet1"
+                },
+                {
+                    "Key": "aws:cloudformation:stack-name",
+                    "Value": "SecureVPC"
+                },
+                {
+                    "Key": "Name",
+                    "Value": "SecureEnvSubnet1"
+                }
+            ],
+            "SubnetArn": "arn:aws:ec2:us-east-1:770404292559:subnet/subnet-078a376937569f346",
+            "EnableDns64": false,
+            "Ipv6Native": false,
+            "PrivateDnsNameOptionsOnLaunch": {
+                "HostnameType": "ip-name",
+                "EnableResourceNameDnsARecord": false,
+                "EnableResourceNameDnsAAAARecord": false
+            },
+            "BlockPublicAccessStates": {
+                "InternetGatewayBlockMode": "off"
+            },
+            "SubnetId": "subnet-078a376937569f346",
+            "State": "available",
+            "VpcId": "vpc-03a6c93961c48f3e6",
+            "CidrBlock": "10.104.133.0/24",
+            "AvailableIpAddressCount": 251,
+            "AvailabilityZone": "us-east-1b",
+            "DefaultForAz": false,
+            "MapPublicIpOnLaunch": false
+        },
+        {
+            "AvailabilityZoneId": "use1-az6",
+            "MapCustomerOwnedIpOnLaunch": false,
+            "OwnerId": "770404292559",
+            "AssignIpv6AddressOnCreation": false,
+            "Ipv6CidrBlockAssociationSet": [],
+            "Tags": [
+                {
+                    "Key": "Name",
+                    "Value": "SecureEnvSubnet2"
+                },
+                {
+                    "Key": "aws:cloudformation:logical-id",
+                    "Value": "Subnet2"
+                },
+                {
+                    "Key": "aws:cloudformation:stack-id",
+                    "Value": "arn:aws:cloudformation:us-east-1:770404292559:stack/SecureVPC/7d84b900-4f89-11f1-bd20-12b7a2040e37"
+                },
+                {
+                    "Key": "aws:cloudformation:stack-name",
+                    "Value": "SecureVPC"
+                },
+                {
+                    "Key": "Project",
+                    "Value": "ZRT-C013"
+                },
+                {
+                    "Key": "Owner",
+                    "Value": "Network Team"
+                }
+            ],
+            "SubnetArn": "arn:aws:ec2:us-east-1:770404292559:subnet/subnet-0071721f724815847",
+            "EnableDns64": false,
+            "Ipv6Native": false,
+            "PrivateDnsNameOptionsOnLaunch": {
+                "HostnameType": "ip-name",
+                "EnableResourceNameDnsARecord": false,
+                "EnableResourceNameDnsAAAARecord": false
+            },
+            "BlockPublicAccessStates": {
+                "InternetGatewayBlockMode": "off"
+            },
+            "SubnetId": "subnet-0071721f724815847",
+            "State": "available",
+            "VpcId": "vpc-03a6c93961c48f3e6",
+            "CidrBlock": "10.104.134.0/24",
+            "AvailableIpAddressCount": 251,
+            "AvailabilityZone": "us-east-1b",
+            "DefaultForAz": false,
+            "MapPublicIpOnLaunch": false
+        }
+    ]
+}
