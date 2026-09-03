@@ -1,9 +1,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Mealie — Infrastructure Destroy Pipeline
 //
-// Permanently removes Mealie AWS infrastructure via `terraform destroy`.
-// The corporate VPC and its subnets are NOT destroyed — they are referenced
-// as data sources and are never managed by this Terraform configuration.
+// Permanently removes ALL Mealie AWS infrastructure via `terraform destroy`,
+// including the VPC and all networking resources created by Terraform.
 // Requires manual approval. The Terraform state backend (S3 + DynamoDB) is
 // destroyed as a final separate step.
 //
@@ -31,19 +30,18 @@ pipeline {
 WARNING: This will PERMANENTLY DESTROY Mealie infrastructure in AWS.
 
 Resources that will be deleted:
+  - VPC, subnets, Internet Gateway, route tables
+  - VPC endpoints (ECR, Secrets Manager, CloudWatch Logs, S3)
   - ECS Fargate service and cluster
   - RDS PostgreSQL database  *** ALL DATA WILL BE LOST ***
   - EFS filesystem            *** ALL UPLOADED FILES WILL BE LOST ***
   - Application Load Balancer
   - ECR repository and all Docker images
-  - Security groups (ALB, ECS, RDS, EFS)
+  - Security groups (ALB, ECS, RDS, EFS, VPC endpoints)
   - IAM roles and Jenkins IAM user
   - Secrets Manager secrets
   - CloudWatch log group
   - Terraform state S3 bucket and DynamoDB lock table
-
-Resources that will NOT be deleted:
-  - Corporate VPC and subnets (pre-existing, not managed by Terraform)
 
 This action is IRREVERSIBLE. Confirm to proceed.
 """,
@@ -97,19 +95,15 @@ This action is IRREVERSIBLE. Confirm to proceed.
 
         stage('Terraform Plan Destroy') {
             steps {
-                withCredentials([
-                    file(credentialsId: 'terraform-tfvars', variable: 'TFVARS_FILE'),
-                    [
-                        $class: 'AmazonWebServicesCredentialsBinding',
-                        credentialsId: 'aws-mealie-creds',
-                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-                    ]
-                ]) {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-mealie-creds',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
                     dir(env.TF_DIR) {
                         sh """
                             terraform plan -destroy \
-                                -var-file=\${TFVARS_FILE} \
                                 -out=destroy.tfplan
                         """
                     }

@@ -1,16 +1,13 @@
 output "vpc_id" {
-  value = data.aws_vpc.main.id
+  value = aws_vpc.main.id
 }
 
-# Both public and private consumers use the same existing subnets.
-# The corporate VPC has no separate private subnets — all subnets have IGW
-# routes and are protected by security groups instead.
 output "public_subnet_ids" {
-  value = var.existing_subnet_ids
+  value = aws_subnet.public[*].id
 }
 
 output "private_subnet_ids" {
-  value = var.existing_subnet_ids
+  value = aws_subnet.private[*].id
 }
 
 output "alb_security_group_id" {

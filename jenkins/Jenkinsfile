@@ -184,19 +184,15 @@ pipeline {
         // ── 5. Create ECR first so we have a registry to push to ──────────────
         stage('Create ECR Repository') {
             steps {
-                withCredentials([
-                    file(credentialsId: 'terraform-tfvars', variable: 'TFVARS_FILE'),
-                    [
-                        $class: 'AmazonWebServicesCredentialsBinding',
-                        credentialsId: 'aws-mealie-creds',
-                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-                    ]
-                ]) {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-mealie-creds',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
                     dir(env.TF_DIR) {
                         sh """
                             terraform apply \
-                                -var-file=\${TFVARS_FILE} \
                                 -target=module.ecr \
                                 -auto-approve
                         """
@@ -242,19 +238,15 @@ pipeline {
         // Idempotent: safe to run on every push.
         stage('Apply Infrastructure') {
             steps {
-                withCredentials([
-                    file(credentialsId: 'terraform-tfvars', variable: 'TFVARS_FILE'),
-                    [
-                        $class: 'AmazonWebServicesCredentialsBinding',
-                        credentialsId: 'aws-mealie-creds',
-                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-                    ]
-                ]) {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-mealie-creds',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
                     dir(env.TF_DIR) {
                         sh """
                             terraform apply \
-                                -var-file=\${TFVARS_FILE} \
                                 -auto-approve
                         """
                     }

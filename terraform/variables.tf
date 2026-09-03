@@ -18,25 +18,16 @@ variable "aws_region" {
 
 # ── Networking ────────────────────────────────────────────────────────────────
 
-variable "existing_vpc_id" {
+variable "vpc_cidr" {
   type        = string
-  description = "ID of the existing corporate VPC to deploy into"
-}
-
-variable "existing_subnet_ids" {
-  type        = list(string)
-  description = "Subnet IDs from the corporate VPC spanning at least 2 AZs (for ALB and RDS)"
-}
-
-variable "subnet_nacl_ids" {
-  type        = map(string)
-  description = "Map of key => NACL ID for each subnet that needs Fargate NACL rules. Keys can be anything unique (e.g. subnet IDs). Get values with: aws ec2 describe-network-acls --filters 'Name=association.subnet-id,Values=<subnet-id>' --query 'NetworkAcls[0].NetworkAclId'"
-  default     = {}
+  description = "CIDR block for the VPC"
+  default     = "10.0.0.0/16"
 }
 
 variable "allowed_cidr_blocks" {
   type        = list(string)
-  description = "Corporate VPN and office IP ranges allowed to reach the ALB"
+  description = "CIDR blocks allowed to reach the ALB on port 80. Defaults to open internet."
+  default     = ["0.0.0.0/0"]
 }
 
 # ── RDS ───────────────────────────────────────────────────────────────────────
