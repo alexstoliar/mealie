@@ -19,6 +19,17 @@ allowed_cidr_blocks = [
   "10.104.132.0/22",
 ]
 
+# NACL IDs for the subnets above — required to add Fargate-compatible rules to the
+# corporate NACLs (egress TCP 443 + inbound ephemeral ports for return traffic).
+# Get each ID with:
+#   aws ec2 describe-network-acls \
+#     --filters "Name=association.subnet-id,Values=<subnet-id>" \
+#     --query 'NetworkAcls[0].NetworkAclId' --region us-east-1
+subnet_nacl_ids = {
+  "subnet-0946c05e288097986" = "acl-0e4fb46730765221b"
+  "subnet-078a376937569f346" = "acl-0f43eea9e6c646645"
+}
+
 # ── RDS PostgreSQL ────────────────────────────────────────────────────────────
 # db.t3.micro ~$15/month (20 GB storage included in free tier for 12 months)
 rds_instance_class    = "db.t3.micro"
