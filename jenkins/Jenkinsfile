@@ -55,6 +55,8 @@ pipeline {
         ECS_SERVICE    = 'mealie-prod'
         TF_FAMILY      = 'mealie-prod'
         TF_DIR         = 'terraform'
+        // Terraform variable overrides — take precedence over terraform.tfvars
+        TF_VAR_allowed_cidr_blocks = '["0.0.0.0/0"]'
         // ─────────────────────────────────────────────────────────────────────
     }
 
@@ -157,22 +159,7 @@ pipeline {
             }
         }
 
-        // ── 4. Write terraform.tfvars ─────────────────────────────────────────
-        // Generates tfvars in the workspace on every run so the Jenkinsfile is
-        // the single source of truth — no manually-managed file on the agent.
-        stage('Write Terraform Vars') {
-            steps {
-                dir(env.TF_DIR) {
-                    sh """
-                        cat > terraform.tfvars <<'TFVARS'
-allowed_cidr_blocks = ["0.0.0.0/0"]
-TFVARS
-                    """
-                }
-            }
-        }
-
-        // ── 5. Terraform init ─────────────────────────────────────────────────
+        // ── 4. Terraform init ─────────────────────────────────────────────────
         stage('Terraform Init') {
             steps {
                 withCredentials([[
