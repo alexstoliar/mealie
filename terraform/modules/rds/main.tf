@@ -17,9 +17,20 @@ resource "aws_secretsmanager_secret_version" "db_credentials" {
   })
 }
 
+# Tracks the VPC ID so that subnet group and DB instance are replaced (not
+# updated in-place) whenever the VPC changes. AWS does not allow modifying
+# a DB subnet group to reference subnets in a different VPC.
+resource "terraform_data" "vpc_id" {
+  input = var.vpc_id
+}
+
 resource "aws_db_subnet_group" "main" {
   name       = "${var.project_name}-${var.environment}-db-subnet-group"
   subnet_ids = var.private_subnet_ids
+
+  lifecycle {
+    replace_triggered_by = [terraform_data.vpc_id]
+  }
 
   tags = { Name = "${var.project_name}-${var.environment}-db-subnet-group" }
 }
@@ -45,6 +56,10 @@ resource "aws_db_instance" "main" {
   backup_retention_period = 7
   backup_window           = "02:00-03:00"
   maintenance_window      = "sun:04:00-sun:05:00"
+
+  lifecycle {
+    replace_triggered_by = [terraform_data.vpc_id]
+  }
 
   tags = { Name = "${var.project_name}-${var.environment}-db" }
 }
