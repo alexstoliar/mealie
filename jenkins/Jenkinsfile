@@ -55,8 +55,8 @@ pipeline {
         ECS_SERVICE    = 'mealie-prod'
         TF_FAMILY      = 'mealie-prod'
         TF_DIR         = 'terraform'
-        // Terraform variable overrides — take precedence over terraform.tfvars
-        TF_VAR_allowed_cidr_blocks = '["0.0.0.0/0"]'
+        // Used as a -var flag (highest precedence, overrides terraform.tfvars)
+        ALLOWED_CIDR_BLOCKS = '["0.0.0.0/0"]'
         // ─────────────────────────────────────────────────────────────────────
     }
 
@@ -249,6 +249,7 @@ pipeline {
                     dir(env.TF_DIR) {
                         sh """
                             terraform apply \
+                                -var='allowed_cidr_blocks=${env.ALLOWED_CIDR_BLOCKS}' \
                                 -auto-approve
                         """
                     }
