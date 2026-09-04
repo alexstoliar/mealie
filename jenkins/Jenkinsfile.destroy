@@ -93,6 +93,31 @@ This action is IRREVERSIBLE. Confirm to proceed.
             }
         }
 
+        // Remove the Jenkins IAM user and its access key from Terraform state
+        // so that terraform destroy does NOT delete them. The credentials in
+        // aws-mealie-creds stay valid for the rest of this pipeline.
+        // The orphaned resources are cleaned up manually in the final stage.
+        stage('Decouple Jenkins IAM From State') {
+            steps {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-mealie-creds',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
+                    dir(env.TF_DIR) {
+                        sh """
+                            terraform state rm module.iam.aws_iam_access_key.jenkins                        || true
+                            terraform state rm module.iam.aws_iam_user_policy.jenkins                       || true
+                            terraform state rm module.iam.aws_secretsmanager_secret_version.jenkins_credentials || true
+                            terraform state rm module.iam.aws_secretsmanager_secret.jenkins_credentials     || true
+                            terraform state rm module.iam.aws_iam_user.jenkins                              || true
+                        """
+                    }
+                }
+            }
+        }
+
         stage('Terraform Plan Destroy') {
             steps {
                 withCredentials([[
@@ -175,6 +200,49 @@ This action is IRREVERSIBLE. Confirm to proceed.
                             --region ${AWS_REGION} || true
 
                         echo "All infrastructure and state backend destroyed."
+                    """
+                }
+            }
+        }
+
+        // Delete the Jenkins IAM user that was decoupled from Terraform state.
+        // This runs last so the credentials remain valid through state backend cleanup.
+        stage('Delete Jenkins IAM User') {
+            steps {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-mealie-creds',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
+                    sh """
+                        IAM_USER="${PROJECT_NAME}-jenkins"
+
+                        # Delete all access keys
+                        for KEY_ID in \$(aws iam list-access-keys \
+                                --user-name \$IAM_USER \
+                                --query 'AccessKeyMetadata[].AccessKeyId' \
+                                --output text 2>/dev/null); do
+                            aws iam delete-access-key \
+                                --user-name \$IAM_USER \
+                                --access-key-id "\$KEY_ID" || true
+                        done
+
+                        # Delete inline policy
+                        aws iam delete-user-policy \
+                            --user-name \$IAM_USER \
+                            --policy-name "${PROJECT_NAME}-jenkins-policy" || true
+
+                        # Delete Secrets Manager secret (force, no recovery window)
+                        aws secretsmanager delete-secret \
+                            --secret-id "${PROJECT_NAME}-${ENVIRONMENT}-jenkins-credentials" \
+                            --force-delete-without-recovery \
+                            --region ${AWS_REGION} || true
+
+                        # Finally delete the IAM user
+                        aws iam delete-user --user-name \$IAM_USER || true
+
+                        echo "Jenkins IAM user \$IAM_USER deleted."
                     """
                 }
             }
