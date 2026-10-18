@@ -56,7 +56,7 @@ pipeline {
         TF_FAMILY      = 'mealie-prod'
         TF_DIR         = 'terraform'
         // Used as a -var flag (highest precedence, overrides terraform.tfvars)
-        ALLOWED_CIDR_BLOCKS = '["195.160.232.0/22"]'
+        ALLOWED_CIDR_BLOCKS = '["0.0.0.0/0"]'
         // ─────────────────────────────────────────────────────────────────────
     }
 
