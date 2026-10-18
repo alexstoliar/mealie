@@ -228,9 +228,15 @@ pipeline {
                     sh """
                         aws ecr get-login-password --region ${AWS_REGION} | \
                             docker login --username AWS --password-stdin ${env.ECR_REGISTRY}
-                        docker push ${env.FULL_IMAGE}:${env.TAG}
-                        docker push ${env.FULL_IMAGE}:latest
                     """
+                    // Large layer uploads can be reset by flaky networks (e.g. VM NAT).
+                    // Already-pushed layers are skipped on retry, so this is cheap.
+                    retry(5) {
+                        sh """
+                            docker push ${env.FULL_IMAGE}:${env.TAG}
+                            docker push ${env.FULL_IMAGE}:latest
+                        """
+                    }
                 }
             }
         }
