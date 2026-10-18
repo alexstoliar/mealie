@@ -1,0 +1,225 @@
+================================================================================
+MEALIE CI/CD PIPELINE DESCRIPTION
+================================================================================
+
+There are two Jenkinsfiles located in jenkins/:
+  - Jenkinsfile         (main CI/CD pipeline)
+  - Jenkinsfile.destroy (infrastructure teardown pipeline)
+
+
+================================================================================
+jenkins/Jenkinsfile — Main CI/CD Pipeline
+================================================================================
+
+Triggered on every push to mealie-next. On first run it provisions all AWS
+infrastructure; on subsequent runs Terraform is a no-op and only the app image
+gets updated.
+
+Parameters:
+  - IMAGE_TAG     — override the image tag (defaults to build-<BUILD_NUMBER>)
+  - DEPLOY_BRANCH — branch that triggers deployment (default: mealie-next)
+
+Environment variables:
+  AWS_REGION=us-east-1, ECS_CLUSTER/SERVICE=mealie-prod,
+  ALLOWED_CIDR_BLOCKS=["0.0.0.0/0"], ECR_REPO_NAME=mealie, TF_DIR=terraform
+
+--------------------------------------------------------------------------------
+STAGE 1 — Resolve Image Tag
+--------------------------------------------------------------------------------
+Sets env.TAG to params.IMAGE_TAG if provided, otherwise build-<BUILD_NUMBER>.
+
+--------------------------------------------------------------------------------
+STAGE 2 — Configure AWS
+--------------------------------------------------------------------------------
+Uses aws-mealie-creds Jenkins credentials. Calls aws sts get-caller-identity
+to get AWS_ACCOUNT_ID, then derives:
+  - TF_STATE_BUCKET = mealie-tfstate-<ACCOUNT_ID>
+  - TF_LOCK_TABLE   = mealie-tfstate-lock
+  - ECR_REGISTRY and FULL_IMAGE URIs
+
+--------------------------------------------------------------------------------
+STAGE 3 — Bootstrap State Backend  (idempotent)
+--------------------------------------------------------------------------------
+Checks if the S3 bucket and DynamoDB table exist; creates them if not:
+  - S3 bucket with versioning, AES256 encryption, and public access blocked
+  - DynamoDB table (PAY_PER_REQUEST) for Terraform state locking;
+    waits for it to become active
+Both checks are idempotent — safe to run on every pipeline execution.
+
+--------------------------------------------------------------------------------
+STAGE 4 — Terraform Init
+--------------------------------------------------------------------------------
+Runs terraform init -reconfigure inside ./terraform/, injecting backend config:
+  bucket, key (mealie/terraform.tfstate), region, dynamodb_table, encrypt=true
+
+--------------------------------------------------------------------------------
+STAGE 5 — Create ECR Repository
+--------------------------------------------------------------------------------
+Runs: terraform apply -target=module.ecr -auto-approve
+Creates only the ECR registry first so there is a place to push the image
+before the full infrastructure apply in Stage 8.
+
+--------------------------------------------------------------------------------
+STAGE 6 — Build Docker Image
+--------------------------------------------------------------------------------
+Builds from docker/Dockerfile, tagging as both :<TAG> and :latest.
+Passes --build-arg COMMIT=<GIT_COMMIT>.
+
+--------------------------------------------------------------------------------
+STAGE 7 — Push to ECR
+--------------------------------------------------------------------------------
+Authenticates via aws ecr get-login-password piped to docker login,
+then pushes both the versioned tag and latest to ECR.
+
+--------------------------------------------------------------------------------
+STAGE 8 — Apply Infrastructure
+--------------------------------------------------------------------------------
+Runs full: terraform apply -auto-approve
+  with -var='allowed_cidr_blocks=["0.0.0.0/0"]' (overrides tfvars)
+
+Creates/updates on first run; no-op on subsequent runs for unchanged resources:
+  - VPC, subnets, Internet Gateway, route tables
+  - VPC endpoints (ECR, Secrets Manager, CloudWatch Logs, S3)
+  - ECS Fargate cluster and service
+  - RDS PostgreSQL database
+  - EFS filesystem
+  - Application Load Balancer
+  - IAM roles and Jenkins IAM user
+  - Secrets Manager secrets
+  - CloudWatch log group
+
+--------------------------------------------------------------------------------
+STAGE 9 — Deploy to ECS
+--------------------------------------------------------------------------------
+Three-step rolling deploy:
+  1. Fetch current task definition JSON via aws ecs describe-task-definition
+  2. Use jq to swap the container image to the new tag, strip read-only fields
+     (taskDefinitionArn, revision, status, requiresAttributes, compatibilities,
+      registeredAt, registeredBy)
+  3. Register the new revision with aws ecs register-task-definition,
+     then call aws ecs update-service to trigger a rolling update
+
+--------------------------------------------------------------------------------
+STAGE 10 — Wait for Stability
+--------------------------------------------------------------------------------
+Calls: aws ecs wait services-stable  (15-minute timeout)
+On success, queries the ALB DNS name and prints the app URL:
+  http://<ALB_DNS>
+
+--------------------------------------------------------------------------------
+POST ACTIONS
+--------------------------------------------------------------------------------
+  always:  docker image prune -f  (clean up dangling images)
+  success: echo deployed image tag
+  failure: echo failure notice (infra may be partially created)
+
+
+================================================================================
+jenkins/Jenkinsfile.destroy — Infrastructure Destroy Pipeline
+================================================================================
+
+A separate, manually-triggered pipeline to permanently destroy all AWS
+resources. Requires human approval before proceeding.
+
+--------------------------------------------------------------------------------
+STAGE 1 — Confirm Destruction
+--------------------------------------------------------------------------------
+input step — pauses and requires a human to click:
+  "Yes, destroy all infrastructure"
+
+Lists every resource class that will be deleted with explicit warnings that
+RDS data and EFS uploaded files are unrecoverable. Pipeline will not continue
+until a human approves.
+
+--------------------------------------------------------------------------------
+STAGE 2 — Configure AWS
+--------------------------------------------------------------------------------
+Same as main pipeline — resolves AWS_ACCOUNT_ID, TF_STATE_BUCKET, TF_LOCK_TABLE
+using aws sts get-caller-identity with aws-mealie-creds credentials.
+
+--------------------------------------------------------------------------------
+STAGE 3 — Terraform Init
+--------------------------------------------------------------------------------
+Same backend initialization as the main pipeline (-reconfigure).
+
+--------------------------------------------------------------------------------
+STAGE 4 — Decouple Jenkins IAM From State  (critical safety step)
+--------------------------------------------------------------------------------
+Runs terraform state rm on all Jenkins IAM-related resources:
+  - module.iam.aws_iam_access_key.jenkins
+  - module.iam.aws_iam_user_policy.jenkins
+  - module.iam.aws_secretsmanager_secret_version.jenkins_credentials
+  - module.iam.aws_secretsmanager_secret.jenkins_credentials
+  - module.iam.aws_iam_user.jenkins
+
+WHY: If Terraform destroyed the Jenkins IAM user during terraform destroy,
+the AWS credentials stored in Jenkins (aws-mealie-creds) would be invalidated
+mid-pipeline, causing all subsequent AWS API calls to fail. Removing these
+resources from Terraform state lets terraform destroy skip them, keeping the
+credentials alive through the rest of the pipeline. The IAM user is cleaned
+up manually in the final stage instead.
+
+--------------------------------------------------------------------------------
+STAGE 5 — Terraform Plan Destroy
+--------------------------------------------------------------------------------
+Runs: terraform plan -destroy -out=destroy.tfplan
+Generates a saved destroy plan for the next stage.
+
+--------------------------------------------------------------------------------
+STAGE 6 — Execute Destroy
+--------------------------------------------------------------------------------
+Applies the saved plan: terraform apply destroy.tfplan
+Destroys all Terraform-managed infrastructure except the decoupled IAM
+resources (which were removed from state in Stage 4).
+
+--------------------------------------------------------------------------------
+STAGE 7 — Destroy State Backend
+--------------------------------------------------------------------------------
+Now that all managed resources are gone, manually destroys the Terraform
+backend itself (which Terraform cannot self-manage):
+
+  1. Iterates all S3 object versions (versioning was enabled) and deletes each
+  2. Iterates all S3 delete markers and deletes each
+  3. Deletes the S3 bucket
+  4. Deletes the DynamoDB lock table
+
+--------------------------------------------------------------------------------
+STAGE 8 — Delete Jenkins IAM User  (runs LAST intentionally)
+--------------------------------------------------------------------------------
+Manually cleans up the IAM user that was decoupled from state in Stage 4:
+  1. Lists and deletes all access keys
+  2. Deletes inline policy (mealie-jenkins-policy)
+  3. Force-deletes the Secrets Manager secret (no recovery window)
+  4. Deletes the IAM user (mealie-jenkins)
+
+Runs last so credentials remain valid through all preceding cleanup steps.
+
+--------------------------------------------------------------------------------
+POST ACTIONS
+--------------------------------------------------------------------------------
+  always:  rm -f destroy.tfplan  (clean up plan file)
+  success: echo all infrastructure destroyed
+  failure: echo partial destroy notice — check AWS console for remaining resources
+
+
+================================================================================
+JENKINS SETUP REQUIREMENTS (one-time)
+================================================================================
+
+1. Add AWS credentials in Jenkins:
+     Kind: "AWS Credentials"
+     ID:   aws-mealie-creds
+   For the very first run, use any IAM user/role with broad AWS permissions.
+   After first apply, retrieve the dedicated mealie-jenkins keys:
+     aws secretsmanager get-secret-value \
+       --secret-id mealie-prod-jenkins-credentials --region us-east-1
+
+2. Install on Jenkins agent:
+     - Docker
+     - AWS CLI v2
+     - Terraform >= 1.5
+     - jq
+
+3. Configure GitHub webhook -> Jenkins:
+     Use "GitHub hook trigger for GITScm polling" in the pipeline job's
+     Build Triggers section.
