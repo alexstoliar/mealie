@@ -9,11 +9,12 @@
 //   1. Configure AWS & derive resource names
 //   2. Bootstrap Terraform state backend (idempotent S3 + DynamoDB creation)
 //   3. Create ECR repository  (terraform apply -target=module.ecr)
-//   4. Build Docker image from source
-//   5. Push image to ECR
-//   6. Apply full infrastructure  (terraform apply - idempotent)
-//   7. Register new ECS task definition revision with the exact image tag
-//   8. Update ECS service and wait for stability
+//   4. Terraform plan (console output) + manual approval gate
+//   5. Build Docker image from source
+//   6. Push image to ECR
+//   7. Apply the approved plan  (terraform apply tfplan)
+//   8. Register new ECS task definition revision with the exact image tag
+//   9. Update ECS service and wait for stability
 //
 // One-time Jenkins setup:
 //   • Add AWS credentials (Kind: "AWS Credentials") with ID "aws-mealie-creds"
@@ -203,6 +204,57 @@ pipeline {
             }
         }
 
+        // ── 5b. Terraform plan: show what will be created/updated/destroyed ──
+        // Runs after ECR exists so the plan reflects the real remaining diff.
+        // The plan is saved to a file so Apply executes exactly what is reviewed.
+        stage('Terraform Plan') {
+            steps {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-mealie-creds',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
+                    dir(env.TF_DIR) {
+                        script {
+                            // -detailed-exitcode: 0 = no changes, 2 = changes, 1 = error
+                            def rc = sh(
+                                script: """
+                                    terraform plan \
+                                        -input=false \
+                                        -no-color \
+                                        -detailed-exitcode \
+                                        -var='allowed_cidr_blocks=${env.ALLOWED_CIDR_BLOCKS}' \
+                                        -out=tfplan
+                                """,
+                                returnStatus: true
+                            )
+                            if (rc == 1) {
+                                error('terraform plan failed')
+                            }
+                            env.TF_HAS_CHANGES = (rc == 2) ? 'true' : 'false'
+                            echo env.TF_HAS_CHANGES == 'true'
+                                ? 'Terraform detected changes. Review the plan above.'
+                                : 'No infrastructure changes detected.'
+                        }
+                    }
+                }
+            }
+        }
+
+        // ── 5c. Manual confirmation (skipped when there is nothing to change) ─
+        stage('Approve Plan') {
+            when { expression { env.TF_HAS_CHANGES == 'true' } }
+            steps {
+                timeout(time: 1, unit: 'HOURS') {
+                    input(
+                        message: 'Review the Terraform plan in the console output above. Apply these changes?',
+                        ok: 'Apply'
+                    )
+                }
+            }
+        }
+
         // ── 6. Build Docker image ─────────────────────────────────────────────
         stage('Build Docker Image') {
             steps {
@@ -254,9 +306,7 @@ pipeline {
                 ]]) {
                     dir(env.TF_DIR) {
                         sh """
-                            terraform apply \
-                                -var='allowed_cidr_blocks=${env.ALLOWED_CIDR_BLOCKS}' \
-                                -auto-approve
+                            terraform apply -input=false tfplan
                         """
                     }
                 }
@@ -340,6 +390,7 @@ pipeline {
 
     post {
         always {
+            sh 'rm -f ${TF_DIR}/tfplan || true'
             sh 'docker image prune -f || true'
         }
         success {
