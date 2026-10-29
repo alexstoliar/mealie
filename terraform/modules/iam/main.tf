@@ -173,15 +173,6 @@ resource "aws_iam_user_policy" "jenkins" {
         Resource = "*"
       },
       {
-        Sid    = "TerraformLock"
-        Effect = "Allow"
-        Action = [
-          "dynamodb:GetItem", "dynamodb:PutItem",
-          "dynamodb:DeleteItem", "dynamodb:DescribeTable",
-        ]
-        Resource = "*"
-      },
-      {
         Sid    = "ObservabilityAndSecrets"
         Effect = "Allow"
         Action = ["secretsmanager:*", "logs:*", "cloudwatch:*"]

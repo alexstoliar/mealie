@@ -3,11 +3,6 @@ output "state_bucket_name" {
   description = "S3 bucket name for Terraform state"
 }
 
-output "dynamodb_table_name" {
-  value       = aws_dynamodb_table.terraform_lock.name
-  description = "DynamoDB table name for state locking"
-}
-
 output "aws_region" {
   value       = var.aws_region
   description = "AWS region used"
@@ -18,7 +13,7 @@ output "backend_hcl_content" {
     bucket         = "${aws_s3_bucket.terraform_state.bucket}"
     key            = "mealie/terraform.tfstate"
     region         = "${var.aws_region}"
-    dynamodb_table = "${aws_dynamodb_table.terraform_lock.name}"
+    use_lockfile   = true
     encrypt        = true
   EOT
   description = "Paste this content into terraform/backend.hcl (for local use)"

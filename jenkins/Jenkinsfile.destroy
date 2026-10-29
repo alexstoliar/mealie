@@ -3,7 +3,7 @@
 //
 // Permanently removes ALL Mealie AWS infrastructure via `terraform destroy`,
 // including the VPC and all networking resources created by Terraform.
-// Requires manual approval. The Terraform state backend (S3 + DynamoDB) is
+// Requires manual approval. The Terraform state backend (S3) is
 // destroyed as a final separate step.
 //
 // Prerequisites:
@@ -41,7 +41,7 @@ Resources that will be deleted:
   - IAM roles and Jenkins IAM user
   - Secrets Manager secrets
   - CloudWatch log group
-  - Terraform state S3 bucket and DynamoDB lock table
+  - Terraform state S3 bucket
 
 This action is IRREVERSIBLE. Confirm to proceed.
 """,
@@ -64,7 +64,6 @@ This action is IRREVERSIBLE. Confirm to proceed.
                             returnStdout: true
                         ).trim()
                         env.TF_STATE_BUCKET = "${PROJECT_NAME}-tfstate-${env.AWS_ACCOUNT_ID}"
-                        env.TF_LOCK_TABLE   = "${PROJECT_NAME}-tfstate-lock"
                     }
                 }
             }
@@ -84,7 +83,7 @@ This action is IRREVERSIBLE. Confirm to proceed.
                                 -backend-config="bucket=${env.TF_STATE_BUCKET}" \
                                 -backend-config="key=mealie/terraform.tfstate" \
                                 -backend-config="region=${AWS_REGION}" \
-                                -backend-config="dynamodb_table=${env.TF_LOCK_TABLE}" \
+                                -backend-config="use_lockfile=true" \
                                 -backend-config="encrypt=true" \
                                 -reconfigure
                         """
@@ -192,11 +191,6 @@ This action is IRREVERSIBLE. Confirm to proceed.
 
                         aws s3api delete-bucket \
                             --bucket ${env.TF_STATE_BUCKET} \
-                            --region ${AWS_REGION} || true
-
-                        echo "Deleting DynamoDB lock table: ${env.TF_LOCK_TABLE}"
-                        aws dynamodb delete-table \
-                            --table-name ${env.TF_LOCK_TABLE} \
                             --region ${AWS_REGION} || true
 
                         echo "All infrastructure and state backend destroyed."

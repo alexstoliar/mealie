@@ -15,5 +15,5 @@
 bucket         = "mealie-tfstate-<YOUR_AWS_ACCOUNT_ID>"
 key            = "mealie/terraform.tfstate"
 region         = "us-east-1"
-dynamodb_table = "mealie-tfstate-lock"
+use_lockfile   = true
 encrypt        = true
