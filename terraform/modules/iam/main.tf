@@ -167,6 +167,12 @@ resource "aws_iam_user_policy" "jenkins" {
         Resource = "*"
       },
       {
+        Sid      = "WAFManage"
+        Effect   = "Allow"
+        Action   = ["wafv2:*"]
+        Resource = "*"
+      },
+      {
         Sid    = "TerraformState"
         Effect = "Allow"
         Action = ["s3:*"]

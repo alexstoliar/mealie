@@ -56,6 +56,14 @@ module "alb" {
   alb_security_group_id = module.networking.alb_security_group_id
 }
 
+module "waf" {
+  source = "./modules/waf"
+
+  project_name = var.project_name
+  environment  = var.environment
+  alb_arn      = module.alb.alb_arn
+}
+
 module "ecs" {
   source = "./modules/ecs"
 
