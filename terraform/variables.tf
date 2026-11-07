@@ -83,5 +83,5 @@ variable "allow_signup" {
 variable "alarm_email" {
   type        = string
   description = "Email address to notify when CloudWatch alarms fire (empty = no subscription; SNS topic still created)"
-  default     = ""
+  default     = "ostol@softserveinc.com"
 }
