@@ -53,3 +53,8 @@ output "aws_region" {
   value       = var.aws_region
   description = "AWS region"
 }
+
+output "cloudwatch_dashboard_url" {
+  value       = module.monitoring.dashboard_url
+  description = "CloudWatch dashboard for the Mealie app"
+}

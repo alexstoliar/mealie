@@ -88,3 +88,19 @@ module "ecs" {
   alb_dns_name            = module.alb.alb_dns_name
   allow_signup            = var.allow_signup
 }
+
+module "monitoring" {
+  source = "./modules/monitoring"
+
+  project_name            = var.project_name
+  environment             = var.environment
+  aws_region              = var.aws_region
+  cluster_name            = module.ecs.cluster_name
+  service_name            = module.ecs.service_name
+  log_group_name          = module.ecs.log_group_name
+  alb_arn_suffix          = module.alb.alb_arn_suffix
+  target_group_arn_suffix = module.alb.target_group_arn_suffix
+  db_instance_id          = module.rds.db_instance_id
+  efs_id                  = module.efs.efs_id
+  web_acl_name            = module.waf.web_acl_name
+}
