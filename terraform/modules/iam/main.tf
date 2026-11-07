@@ -125,15 +125,15 @@ resource "aws_iam_user_policy" "jenkins" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "ECRFull"
-        Effect = "Allow"
-        Action = ["ecr:*"]
+        Sid      = "ECRFull"
+        Effect   = "Allow"
+        Action   = ["ecr:*"]
         Resource = "*"
       },
       {
-        Sid    = "ECSFull"
-        Effect = "Allow"
-        Action = ["ecs:*"]
+        Sid      = "ECSFull"
+        Effect   = "Allow"
+        Action   = ["ecs:*"]
         Resource = "*"
       },
       {
@@ -173,15 +173,15 @@ resource "aws_iam_user_policy" "jenkins" {
         Resource = "*"
       },
       {
-        Sid    = "TerraformState"
-        Effect = "Allow"
-        Action = ["s3:*"]
+        Sid      = "TerraformState"
+        Effect   = "Allow"
+        Action   = ["s3:*"]
         Resource = "*"
       },
       {
-        Sid    = "ObservabilityAndSecrets"
-        Effect = "Allow"
-        Action = ["secretsmanager:*", "logs:*", "cloudwatch:*"]
+        Sid      = "ObservabilityAndSecrets"
+        Effect   = "Allow"
+        Action   = ["secretsmanager:*", "logs:*", "cloudwatch:*"]
         Resource = "*"
       },
     ]

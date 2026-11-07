@@ -61,22 +61,22 @@ resource "aws_ecs_task_definition" "mealie" {
       ]
 
       environment = [
-        { name = "DB_ENGINE",       value = "postgres" },
+        { name = "DB_ENGINE", value = "postgres" },
         { name = "POSTGRES_SERVER", value = var.db_endpoint },
-        { name = "POSTGRES_PORT",   value = "5432" },
-        { name = "POSTGRES_DB",     value = "mealie" },
-        { name = "POSTGRES_USER",   value = "mealie" },
-        { name = "BASE_URL",        value = "http://${var.alb_dns_name}" },
-        { name = "ALLOW_SIGNUP",    value = var.allow_signup },
-        { name = "API_PORT",        value = "9000" },
-        { name = "PUID",            value = "911" },
-        { name = "PGID",            value = "911" },
-        { name = "TZ",              value = "UTC" },
+        { name = "POSTGRES_PORT", value = "5432" },
+        { name = "POSTGRES_DB", value = "mealie" },
+        { name = "POSTGRES_USER", value = "mealie" },
+        { name = "BASE_URL", value = "http://${var.alb_dns_name}" },
+        { name = "ALLOW_SIGNUP", value = var.allow_signup },
+        { name = "API_PORT", value = "9000" },
+        { name = "PUID", value = "911" },
+        { name = "PGID", value = "911" },
+        { name = "TZ", value = "UTC" },
       ]
 
       secrets = [
         {
-          name      = "POSTGRES_PASSWORD"
+          name = "POSTGRES_PASSWORD"
           # JSON key syntax: secretArn:jsonKey::
           valueFrom = "${var.db_secret_arn}:password::"
         }

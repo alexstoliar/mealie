@@ -9,7 +9,7 @@ output "aws_region" {
 }
 
 output "backend_hcl_content" {
-  value = <<-EOT
+  value       = <<-EOT
     bucket         = "${aws_s3_bucket.terraform_state.bucket}"
     key            = "mealie/terraform.tfstate"
     region         = "${var.aws_region}"
