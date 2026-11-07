@@ -10,3 +10,7 @@ variable "target_group_arn_suffix" { type = string }
 variable "db_instance_id" { type = string }
 variable "efs_id" { type = string }
 variable "web_acl_name" { type = string }
+variable "alarm_email" {
+  type    = string
+  default = ""
+}

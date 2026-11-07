@@ -44,3 +44,6 @@ ecs_desired_count = 1
 # ── Application ───────────────────────────────────────────────────────────────
 allow_signup     = "false"
 mealie_image_tag = "latest"
+
+# ── Monitoring ────────────────────────────────────────────────────────────────
+alarm_email = "ostol@softserveinc.com" # set to receive CloudWatch alarm emails (confirm the SNS subscription email)

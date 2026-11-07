@@ -77,3 +77,11 @@ variable "allow_signup" {
   description = "Allow public user self-registration (true/false)"
   default     = "false"
 }
+
+# ── Monitoring ────────────────────────────────────────────────────────────────
+
+variable "alarm_email" {
+  type        = string
+  description = "Email address to notify when CloudWatch alarms fire (empty = no subscription; SNS topic still created)"
+  default     = ""
+}

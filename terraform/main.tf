@@ -103,4 +103,5 @@ module "monitoring" {
   db_instance_id          = module.rds.db_instance_id
   efs_id                  = module.efs.efs_id
   web_acl_name            = module.waf.web_acl_name
+  alarm_email             = var.alarm_email
 }
