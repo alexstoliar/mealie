@@ -100,6 +100,7 @@ module "monitoring" {
   log_group_name          = module.ecs.log_group_name
   alb_arn_suffix          = module.alb.alb_arn_suffix
   target_group_arn_suffix = module.alb.target_group_arn_suffix
+  target_group_arn        = module.alb.target_group_arn
   db_instance_id          = module.rds.db_instance_id
   efs_id                  = module.efs.efs_id
   web_acl_name            = module.waf.web_acl_name

@@ -14,3 +14,8 @@ variable "alarm_email" {
   type    = string
   default = ""
 }
+variable "target_group_arn" { type = string }
+variable "diagnostics_retention_days" {
+  type    = number
+  default = 90
+}

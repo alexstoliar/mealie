@@ -58,3 +58,8 @@ output "cloudwatch_dashboard_url" {
   value       = module.monitoring.dashboard_url
   description = "CloudWatch dashboard for the Mealie app"
 }
+
+output "diagnostics_bucket" {
+  value       = module.monitoring.diagnostics_bucket
+  description = "S3 bucket holding diagnostic reports generated when the unhealthy-targets alarm fires"
+}

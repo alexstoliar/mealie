@@ -9,3 +9,11 @@ output "dashboard_url" {
 output "alarm_topic_arn" {
   value = aws_sns_topic.alarms.arn
 }
+
+output "diagnostics_bucket" {
+  value = aws_s3_bucket.diagnostics.bucket
+}
+
+output "diagnostics_lambda_name" {
+  value = aws_lambda_function.diagnostics.function_name
+}

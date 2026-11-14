@@ -16,3 +16,4 @@ terraform.tfvars
 
 # Plan files
 *.tfplan
+*.zip
