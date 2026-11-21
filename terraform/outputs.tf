@@ -63,3 +63,34 @@ output "diagnostics_bucket" {
   value       = module.monitoring.diagnostics_bucket
   description = "S3 bucket holding diagnostic reports generated when the unhealthy-targets alarm fires"
 }
+
+output "standby_instance_id" {
+  value       = module.failover.instance_id
+  description = "EC2 standby instance ID"
+}
+
+output "standby_target_group_arn" {
+  value       = module.failover.target_group_arn
+  description = "ALB target group for the EC2 standby"
+}
+
+output "primary_target_group_arn" {
+  value       = module.alb.target_group_arn
+  description = "ALB target group for ECS"
+}
+
+output "alb_listener_arn" {
+  value       = module.alb.listener_arn
+  description = "Main HTTP listener; its default action is switched by failover.sh"
+}
+
+output "standby_ssm_document" {
+  value       = module.failover.ssm_document_name
+  description = "SSM document that starts/stops Mealie on the standby"
+}
+
+output "failover_test_header" {
+  value       = module.failover.test_header_value
+  sensitive   = true
+  description = "Value of X-Failover-Test header for the pre-cutover test rule"
+}

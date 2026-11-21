@@ -1,0 +1,91 @@
+#!/bin/bash
+# Runs on the EC2 standby via SSM (document parameter {{ action }}).
+# Idempotent: installs Docker/Compose/EFS utils if missing, mounts EFS,
+# starts or stops Mealie with Docker Compose.
+set -euo pipefail
+
+ACTION="{{ action }}"
+REGION="${region}"
+APP_DIR=/opt/mealie
+DATA_DIR=/mnt/mealie-data
+
+if [ "$ACTION" = "stop" ]; then
+  if [ -f $APP_DIR/docker-compose.yml ]; then
+    docker compose -f $APP_DIR/docker-compose.yml down
+  fi
+  echo "Mealie stopped on standby"
+  exit 0
+fi
+
+# ── Packages ──
+if ! command -v docker >/dev/null; then
+  dnf install -y docker amazon-efs-utils jq
+  systemctl enable --now docker
+fi
+if ! docker compose version >/dev/null 2>&1; then
+  mkdir -p /usr/local/lib/docker/cli-plugins
+  curl -fsSL "https://github.com/docker/compose/releases/download/v2.29.7/docker-compose-linux-x86_64" \
+    -o /usr/local/lib/docker/cli-plugins/docker-compose
+  chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+fi
+systemctl start docker
+
+# ── EFS (same access point as ECS: /app/data, uid/gid 911) ──
+mkdir -p $DATA_DIR
+if ! mountpoint -q $DATA_DIR; then
+  mount -t efs -o tls,iam,accesspoint=${access_point} ${efs_id}:/ $DATA_DIR
+fi
+
+# ── Image: same tag ECS is currently running ──
+TD=$(aws ecs describe-services --region $REGION --cluster ${cluster} --services ${service} \
+  --query 'services[0].taskDefinition' --output text)
+IMAGE=$(aws ecs describe-task-definition --region $REGION --task-definition "$TD" \
+  --query 'taskDefinition.containerDefinitions[0].image' --output text)
+aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin ${ecr_registry}
+
+# ── Config (password never written to the compose file) ──
+mkdir -p $APP_DIR
+DB_PASSWORD=$(aws secretsmanager get-secret-value --region $REGION --secret-id ${db_secret_arn} \
+  --query SecretString --output text | jq -r .password)
+umask 077
+cat > $APP_DIR/.env <<ENVEOF
+MEALIE_IMAGE=$IMAGE
+POSTGRES_PASSWORD=$DB_PASSWORD
+ENVEOF
+umask 022
+cat > $APP_DIR/docker-compose.yml <<'COMPOSEEOF'
+services:
+  mealie:
+    image: $${MEALIE_IMAGE}
+    container_name: mealie
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    volumes:
+      - /mnt/mealie-data:/app/data
+    environment:
+      DB_ENGINE: postgres
+      POSTGRES_SERVER: ${db_host}
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: mealie
+      POSTGRES_USER: mealie
+      POSTGRES_PASSWORD: $${POSTGRES_PASSWORD}
+      BASE_URL: ${base_url}
+      ALLOW_SIGNUP: "${allow_signup}"
+      API_PORT: "9000"
+      PUID: "911"
+      PGID: "911"
+      TZ: UTC
+COMPOSEEOF
+
+docker compose -f $APP_DIR/docker-compose.yml --env-file $APP_DIR/.env up -d --pull always
+for i in $(seq 1 30); do
+  if curl -fs http://localhost:9000/api/app/about >/dev/null; then
+    echo "Mealie is up on standby ($IMAGE)"
+    exit 0
+  fi
+  sleep 5
+done
+echo "Mealie did not become healthy" >&2
+docker compose -f $APP_DIR/docker-compose.yml logs --tail 50 >&2
+exit 1

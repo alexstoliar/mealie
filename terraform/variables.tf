@@ -85,3 +85,17 @@ variable "alarm_email" {
   description = "Email address to notify when CloudWatch alarms fire (empty = no subscription; SNS topic still created)"
   default     = "ostol@softserveinc.com"
 }
+
+# ── Failover (EC2 standby) ────────────────────────────────────────────────────
+
+variable "standby_instance_type" {
+  type        = string
+  description = "Instance type of the EC2 standby that runs Mealie in Docker Compose during failover"
+  default     = "t3.small"
+}
+
+variable "failover_operator_cidrs" {
+  type        = list(string)
+  description = "CIDRs allowed to test the standby through the ALB (header X-Failover-Test) before cutover. Empty = no test rule."
+  default     = []
+}

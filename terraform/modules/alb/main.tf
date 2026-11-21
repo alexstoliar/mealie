@@ -43,4 +43,10 @@ resource "aws_lb_listener" "http" {
     type             = "forward"
     target_group_arn = aws_lb_target_group.mealie.arn
   }
+
+  # The failover script switches the default action between the ECS and EC2
+  # target groups; Terraform must not revert it.
+  lifecycle {
+    ignore_changes = [default_action]
+  }
 }

@@ -17,3 +17,7 @@ output "alb_arn_suffix" {
 output "target_group_arn_suffix" {
   value = aws_lb_target_group.mealie.arn_suffix
 }
+
+output "listener_arn" {
+  value = aws_lb_listener.http.arn
+}

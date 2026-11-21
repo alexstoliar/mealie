@@ -17,3 +17,11 @@ output "diagnostics_bucket" {
 output "diagnostics_lambda_name" {
   value = aws_lambda_function.diagnostics.function_name
 }
+
+output "unhealthy_alarm_name" {
+  value = aws_cloudwatch_metric_alarm.unhealthy_hosts.alarm_name
+}
+
+output "unhealthy_alarm_arn" {
+  value = aws_cloudwatch_metric_alarm.unhealthy_hosts.arn
+}
