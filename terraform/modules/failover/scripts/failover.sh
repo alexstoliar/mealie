@@ -20,6 +20,7 @@ EC2_TG=$(tf standby_target_group_arn)
 ECS_TG=$(tf primary_target_group_arn)
 LISTENER=$(tf alb_listener_arn)
 export AWS_DEFAULT_REGION=$REGION
+export AWS_PAGER=""  # AWS CLI v2 would otherwise open `less` on long output and hang the script
 
 confirm() { read -r -p "$1 [type 'yes']: " a; [ "$a" = "yes" ] || { echo "Aborted"; exit 1; }; }
 
