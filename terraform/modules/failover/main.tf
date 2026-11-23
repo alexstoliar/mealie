@@ -54,6 +54,16 @@ resource "aws_security_group_rule" "efs_from_standby" {
   source_security_group_id = aws_security_group.standby.id
 }
 
+resource "aws_security_group_rule" "vpce_from_standby" {
+  type                     = "ingress"
+  description              = "HTTPS (ECR, Secrets Manager endpoints) from EC2 standby"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = var.vpc_endpoints_security_group_id
+  source_security_group_id = aws_security_group.standby.id
+}
+
 # ── Instance role ─────────────────────────────────────────────────────────────
 
 resource "aws_iam_role" "standby" {

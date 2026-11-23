@@ -41,3 +41,4 @@ variable "operator_cidrs" {
   description = "CIDRs allowed to reach the standby through the ALB test rule (header X-Failover-Test) before cutover. Empty = no test rule."
   default     = []
 }
+variable "vpc_endpoints_security_group_id" { type = string }

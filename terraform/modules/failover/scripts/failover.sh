@@ -46,7 +46,13 @@ ssm_run() { # $1 = start|stop
   local id
   id=$(aws ssm send-command --document-name "$DOC" --instance-ids "$INSTANCE" \
     --parameters "action=$1" --query 'Command.CommandId' --output text)
-  aws ssm wait command-executed --command-id "$id" --instance-id "$INSTANCE" || true
+  # The built-in waiter gives up after ~100s; first start (docker install + image pull) takes longer.
+  local st=""
+  for _ in $(seq 1 120); do  # up to 10 min
+    st=$(aws ssm get-command-invocation --command-id "$id" --instance-id "$INSTANCE" \
+      --query Status --output text 2>/dev/null || echo Pending)
+    case "$st" in Pending|InProgress|Delayed) sleep 5 ;; *) break ;; esac
+  done
   aws ssm get-command-invocation --command-id "$id" --instance-id "$INSTANCE" \
     --query '[Status,StandardOutputContent,StandardErrorContent]' --output text
   [ "$(aws ssm get-command-invocation --command-id "$id" --instance-id "$INSTANCE" --query Status --output text)" = "Success" ]
