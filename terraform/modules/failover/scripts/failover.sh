@@ -98,8 +98,10 @@ case "${1:-}" in
     aws ecs update-service --cluster "$CLUSTER" --service "$SERVICE" --desired-count 0 >/dev/null
     aws ecs wait services-stable --cluster "$CLUSTER" --services "$SERVICE"
     ssm_run start
-    wait_healthy "$EC2_TG"
+    # A target group not attached to a listener/rule is never health-checked
+    # (state "unused"), so switch first; ECS is already down, so nothing is lost.
     set_listener "$EC2_TG"
+    wait_healthy "$EC2_TG"
     echo "Cutover complete: ALB now serves the EC2 standby."
     ;;
 
@@ -109,8 +111,9 @@ case "${1:-}" in
     ssm_run stop
     aws ecs update-service --cluster "$CLUSTER" --service "$SERVICE" --desired-count 1 >/dev/null
     aws ecs wait services-stable --cluster "$CLUSTER" --services "$SERVICE"
-    wait_healthy "$ECS_TG"
+    # Same as cutover: the ECS TG is unused (not health-checked) until the listener points at it.
     set_listener "$ECS_TG"
+    wait_healthy "$ECS_TG"
     read -r -p "Stop the standby instance too? [y/N]: " a
     [ "$a" = "y" ] && aws ec2 stop-instances --instance-ids "$INSTANCE" >/dev/null
     echo "Failback complete: ALB now serves ECS."
